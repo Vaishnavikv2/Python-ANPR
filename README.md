@@ -1,2 +1,112 @@
-# Python-ANPR
-Automatic number plate recognition used to detect the number plate using Easy OCR and OpenCV technology
+# 🚗 Automatic Number Plate Recognition (ANPR) using Python
+
+## 📌 Overview
+This project implements **Automatic Number Plate Recognition (ANPR)** using OpenCV and EasyOCR in Python. It detects and extracts vehicle number plates from images, making it useful for **traffic monitoring, toll collection, and security applications**.
+
+---
+
+## 🛠 Installation & Dependencies
+Ensure you have the required dependencies installed. If using Google Colaboratory, run the following commands:
+
+```bash
+!pip install easyocr imutils
+```
+
+### 🔧 Importing Required Libraries
+```python
+import cv2
+from matplotlib import pyplot as plt
+import numpy as np
+import imutils
+import easyocr
+```
+
+---
+
+## 📷 Image Preprocessing
+### Convert Image to Grayscale & Apply Blur
+```python
+img = cv2.imread('image1.jpg')
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+plt.imshow(cv2.cvtColor(gray, cv2.COLOR_BGR2RGB))
+```
+
+### Edge Detection for Localization
+```python
+bfilter = cv2.bilateralFilter(gray, 11, 17, 17) # Noise reduction
+edged = cv2.Canny(bfilter, 30, 200) # Edge detection
+plt.imshow(cv2.cvtColor(edged, cv2.COLOR_BGR2RGB))
+```
+
+---
+
+## 🔍 Contour Detection & Text Extraction
+### Finding Contours
+```python
+keypoints = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+contours = imutils.grab_contours(keypoints)
+contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
+```
+
+### Locating the Number Plate
+```python
+location = None
+for contour in contours:
+    approx = cv2.approxPolyDP(contour, 10, True)
+    if len(approx) == 4:
+        location = approx
+        break
+```
+
+### Masking and Cropping
+```python
+mask = np.zeros(gray.shape, np.uint8)
+new_image = cv2.drawContours(mask, [location], 0, 255, -1)
+new_image = cv2.bitwise_and(img, img, mask=mask)
+
+(x,y) = np.where(mask==255)
+(x1, y1) = (np.min(x), np.min(y))
+(x2, y2) = (np.max(x), np.max(y))
+cropped_image = gray[x1:x2+1, y1:y2+1]
+plt.imshow(cv2.cvtColor(cropped_image, cv2.COLOR_BGR2RGB))
+```
+
+---
+
+## 📝 Reading Text with EasyOCR
+```python
+reader = easyocr.Reader(['en'])
+result = reader.readtext(cropped_image)
+text = result[0][-2]
+```
+
+---
+
+## 📌 Output Visualization
+### Displaying Extracted Text on Image
+```python
+font = cv2.FONT_HERSHEY_SIMPLEX
+res = cv2.putText(img, text=text, org=(approx[0][0][0], approx[1][0][1]+60), 
+                  fontFace=font, fontScale=1, color=(0,255,0), thickness=2, lineType=cv2.LINE_AA)
+res = cv2.rectangle(img, tuple(approx[0][0]), tuple(approx[2][0]), (0,255,0), 3)
+plt.imshow(cv2.cvtColor(res, cv2.COLOR_BGR2RGB))
+```
+
+---
+
+## 🎯 Example Output
+✅ Detected Number Plate: **HR.26 BR.9044**
+
+(![image](https://github.com/user-attachments/assets/7a4e73b1-940e-4b25-9f5a-5d637403b189)
+
+
+---
+
+## 🚀 Future Enhancements
+- ✅ Improve accuracy using deep learning models
+- ✅ Extend to video-based ANPR
+- ✅ Integrate with a database for real-time applications
+
+---
+
+
